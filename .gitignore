@@ -1,0 +1,19 @@
+# Local agent state
+AGENTS.md
+TASKS.md
+
+# Local toolbox state
+toolbox/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Runtime and editor files
+*.log
+*.tmp
+*~
+.DS_Store
+.idea/
+.vscode/
