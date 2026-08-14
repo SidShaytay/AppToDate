@@ -1,6 +1,6 @@
 # AppToDate
 
-AppToDate keeps applications and system components up to date when they are not fully managed by one package manager. It is designed for a Fedora Silverblue workstation and provides small, auditable Bash scripts for each update source.
+AppToDate keeps applications and system components up to date when they are not fully managed by one package manager. It is designed for a Fedora Silverblue workstation and provides small, auditable Bash scripts for each update source. This is opinionated on how one sets up their Apps (e.g. some as brew, some as flatpaks etc.)
 
 ## Quick start
 
@@ -36,7 +36,7 @@ Review each script before running it. These scripts reflect a specific workstati
 
 ## Requirements
 
-- Fedora Silverblue with Bash
+- Fedora Silverblue with Fish or Bash shell
 - The command-line tools used by the updater you run, such as `curl`, `jq`, `podman`, `flatpak`, `toolbox`, `rsync`, or `rpm-ostree`
 - Existing application installs in the paths defined near the top of each script
 - User-level systemd services matching the configured service names
