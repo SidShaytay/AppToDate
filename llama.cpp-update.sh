@@ -7,10 +7,40 @@ BUILD_DIR="${DEST_ROOT}/build-rocm-7.2.3"
 APP_DIR="${HOME}/Apps/llama.cpp"
 TOOLBOX_CONTAINER="${TOOLBOX_CONTAINER:-rocm-7.2.3}"
 LLAMA_SWAP_SERVICE="${LLAMA_SWAP_SERVICE:-llama-swap.service}"
+ALLOW_DIRTY=false
 
 info() {
     printf '%s\n' "$*"
 }
+
+usage() {
+    cat <<'EOF'
+Usage: llama.cpp-update.sh [--allow-dirty]
+
+Without arguments, fast-forward a clean master checkout before building.
+With --allow-dirty, pull and build master even with local modifications.
+EOF
+}
+
+case "${1:-}" in
+    "") ;;
+    --allow-dirty) ALLOW_DIRTY=true ;;
+    -h|--help)
+        usage
+        exit 0
+        ;;
+    *)
+        printf 'error: unknown argument: %s\n' "$1" >&2
+        usage >&2
+        exit 2
+        ;;
+esac
+
+if (( $# > 1 )); then
+    printf 'error: expected at most one argument\n' >&2
+    usage >&2
+    exit 2
+fi
 
 require_dir() {
     if [[ ! -d "$1" ]]; then
@@ -53,10 +83,14 @@ if [[ "$branch" != "master" ]]; then
     exit 1
 fi
 
-if ! git -C "$SRC_DIR" diff --quiet ||
-    ! git -C "$SRC_DIR" diff --cached --quiet; then
-    printf 'error: source checkout has modified tracked files; refusing to pull\n' >&2
-    exit 1
+if [[ "$ALLOW_DIRTY" == true ]]; then
+    info "local source modifications allowed; pull will proceed if Git can preserve them"
+else
+    if ! git -C "$SRC_DIR" diff --quiet ||
+        ! git -C "$SRC_DIR" diff --cached --quiet; then
+        printf 'error: source checkout has modified tracked files; refusing to pull\n' >&2
+        exit 1
+    fi
 fi
 
 info "pulling latest llama.cpp master"
