@@ -25,6 +25,7 @@ Review each script before running it. These scripts reflect a specific workstati
 | Script | Updates | Method |
 | --- | --- | --- |
 | `brew-update.sh` | Homebrew and installed formulae/casks | `brew update` and `brew upgrade --greedy` |
+| `cargo-update.sh` | Rust/Cargo and Cargo-installed binaries | `rustup update` and `cargo-update`, using `cargo-binstall` for prebuilt binaries |
 | `flatpak-update.sh` | Flatpak applications | `flatpak update` |
 | `podman-update.sh` | Selected Podman images | Pulls configured images and restarts associated user services |
 | `vscode-update.sh` | Visual Studio Code tarball install | Downloads and replaces the local installation |
@@ -42,6 +43,10 @@ Review each script before running it. These scripts reflect a specific workstati
 - User-level systemd services matching the configured service names
 
 `system-update.sh` checks for cached non-interactive sudo access first. If needed, it can use a local askpass helper at `$HOME/.local/bin/sudo-askpass-smart`; override `SUDO_ASKPASS_HELPER` to use another helper.
+
+Run `./cargo-update.sh` to update Rust release channels and installed Cargo binaries. It installs `cargo-binstall` and `cargo-update` automatically if missing, skips unchanged versions, and verifies that installed executable files remain present. Prebuilt packages come from upstream releases or Cargo QuickInstall; source compilation fallback in `cargo-binstall` is disabled. Git packages and packages with custom build settings still need a working compiler and native dependencies. Update failures are reported to the harness.
+
+Version-pinned Rust toolchains and your default selection are preserved. The script also updates `stable`; use `cargo +stable` for its current Cargo, or run `rustup default stable` if you want your default Cargo to follow stable releases. `CARGO_HOME`, `RUSTUP_HOME`, and `CARGO_INSTALL_ROOT` can override the standard paths. No services are restarted.
 
 ## Customize it
 
