@@ -15,10 +15,17 @@ info "updating $APP_NAME"
 info "installed apps (before):"
 flatpak list --columns=app,version 2>/dev/null | head -30
 
-# Check if there are pending updates by attempting a dry comparison
-# flatpak doesn't support --dry-run, so we just run update and let it handle it
+# Include commits: an update can keep the same human-readable version.
+before="$(flatpak list --columns=application,arch,branch,origin,installation,active | LC_ALL=C sort)"
+# Flatpak checks remote metadata and skips unchanged application content.
 if ! flatpak update -y 2>&1; then
     warn 'flatpak update reported errors'
+fi
+
+after="$(flatpak list --columns=application,arch,branch,origin,installation,active | LC_ALL=C sort)"
+if [[ "$before" == "$after" ]]; then
+    info 'installed Flatpak commits are unchanged; skipping portal restart'
+    exit 0
 fi
 
 # Restart portal so file pickers and portals work with updated apps

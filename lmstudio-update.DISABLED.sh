@@ -21,11 +21,17 @@ if [[ -f "$desktop_file" ]]; then
 else
     current_version="?"
 fi
+version_file="${APPIMAGE}.version"
+if [[ -s "$version_file" ]]; then
+    current_version="$(<"$version_file")"
+fi
+info "source: $DOWNLOAD_BASE"
+info "destination: $APPIMAGE"
 info "updating $APP_NAME"
 info "installed version: $current_version"
 
 # Resolve the latest download URL (redirects to actual CDN)
-download_url="$(curl -sS -L --connect-timeout 15 -o /dev/null -w '%{url_effective}' "$DOWNLOAD_BASE" 2>/dev/null || echo "")"
+download_url="$(curl -fsS --head -L --connect-timeout 15 --max-time 60 -o /dev/null -w '%{url_effective}' "$DOWNLOAD_BASE" 2>/dev/null || echo "")"
 
 if [[ -z "$download_url" ]]; then
     warn 'could not resolve download URL from LM Studio API'
@@ -33,6 +39,19 @@ if [[ -z "$download_url" ]]; then
 fi
 
 info "latest version URL: $download_url"
+
+latest_version="$(printf '%s\n' "$download_url" | grep -oP '[\d]+\.[\d]+\.[\d]+(-[\d]+)?' | head -1 || true)"
+if [[ -z "$latest_version" ]]; then
+    warn 'could not parse latest version from download URL'
+    exit 1
+fi
+current_normalized="${current_version#v}"
+if [[ "$current_normalized" == "$latest_version" ]] ||
+   { [[ "$current_normalized" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9]+)?$ ]] &&
+     [[ "$(printf '%s\n' "$current_normalized" "$latest_version" | sort -V | head -n 1)" == "$latest_version" ]]; }; then
+    info "$APP_NAME is already up to date; skipping download"
+    exit 0
+fi
 
 # Download to a temp file, then replace
 tmp_appimage="$(mktemp "${APPIMAGE%.appimage}.XXXXXX.AppImage")"
@@ -46,6 +65,7 @@ chmod +x "$tmp_appimage"
 
 # Atomic replace
 mv -f "$tmp_appimage" "$APPIMAGE"
+printf '%s\n' "$latest_version" > "$version_file"
 
 # Update desktop file version if present (extract version from URL)
 if [[ -f "$desktop_file" ]]; then

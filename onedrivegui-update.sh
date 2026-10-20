@@ -21,6 +21,13 @@ if [[ -f "$desktop_file" ]]; then
 else
     current_version="?"
 fi
+# Preserve version knowledge even when no desktop integration is installed.
+version_file="${APPIMAGE}.version"
+if [[ -s "$version_file" ]]; then
+    current_version="$(<"$version_file")"
+fi
+info "source: ${GITHUB_REPO} GitHub releases"
+info "destination: $APPIMAGE"
 info "updating $APP_NAME"
 info "installed version: $current_version"
 
@@ -36,6 +43,17 @@ latest_tag="$(echo "$latest_release" | python3 -c "import sys,json; print(json.l
 if [[ -z "$latest_tag" ]]; then
     warn 'could not parse latest tag from GitHub API'
     exit 1
+fi
+
+info "latest version: $latest_tag"
+current_normalized="${current_version#v}"
+latest_normalized="${latest_tag#v}"
+if [[ "$current_normalized" == "$latest_normalized" ]] ||
+   { [[ "$current_normalized" =~ ^[0-9]+(\.[0-9]+)*$ &&
+        "$latest_normalized" =~ ^[0-9]+(\.[0-9]+)*$ ]] &&
+     [[ "$(printf '%s\n' "$current_normalized" "$latest_normalized" | sort -V | head -n 1)" == "$latest_normalized" ]]; }; then
+    info "$APP_NAME is already up to date; skipping download"
+    exit 0
 fi
 
 # Extract download URL for x86_64 AppImage
@@ -68,6 +86,7 @@ chmod +x "$tmp_appimage"
 
 # Atomic replace
 mv -f "$tmp_appimage" "$APPIMAGE"
+printf '%s\n' "$latest_tag" > "$version_file"
 
 # Update desktop file version if present
 if [[ -f "$desktop_file" ]]; then

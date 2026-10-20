@@ -48,6 +48,10 @@ Run `./cargo-update.sh` to update Rust release channels and installed Cargo bina
 
 Version-pinned Rust toolchains and your default selection are preserved. The script also updates `stable`; use `cargo +stable` for its current Cargo, or run `rustup default stable` if you want your default Cargo to follow stable releases. `CARGO_HOME`, `RUSTUP_HOME`, and `CARGO_INSTALL_ROOT` can override the standard paths. No services are restarted.
 
+Unchanged releases are skipped after checking upstream metadata. `llama.cpp-update.sh` records the revision and build settings only after a successful install and service restart; its first run builds once to create that record. Later runs skip the build, file copy, and restart when the record matches. `--allow-dirty` always builds and leaves no clean-build record. To force a clean rebuild, remove `~/Apps/llama.cpp/.updater-build`.
+
+The AppImage updaters compare release versions and save a `.version` file beside the installed AppImage, including when no desktop file exists. LM Studio remains disabled as `lmstudio-update.DISABLED.sh`; it is excluded from the harness. Flatpak and Podman reuse unchanged content, and restart managed services only when installed commits or image IDs change.
+
 ## Customize it
 
 Each updater keeps its application paths, image list, and service names near the top of the file. Adjust those values for your workstation before running it. Some settings, including `LLAMA_SWAP_SERVICE`, `TOOLBOX_CONTAINER`, and `SUDO_ASKPASS_HELPER`, can also be supplied as environment variables.

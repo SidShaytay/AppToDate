@@ -8,6 +8,7 @@ APP_DIR="${HOME}/Apps/llama.cpp"
 TOOLBOX_CONTAINER="${TOOLBOX_CONTAINER:-rocm-7.2.3}"
 LLAMA_SWAP_SERVICE="${LLAMA_SWAP_SERVICE:-llama-swap.service}"
 ALLOW_DIRTY=false
+BUILD_RECORD="$APP_DIR/.updater-build"
 
 info() {
     printf '%s\n' "$*"
@@ -103,6 +104,18 @@ else
     info "source updated: $old_rev -> $new_rev"
 fi
 
+# Compare the installed build, not just HEAD before/after pull: a previous
+# build may have failed after Git already advanced the source checkout.
+build_key="$new_rev $TOOLBOX_CONTAINER $BUILD_DIR"
+if [[ "$ALLOW_DIRTY" == false && -f "$BUILD_RECORD" &&
+      "$(<"$BUILD_RECORD")" == "$build_key" && -x "$APP_DIR/llama-server" ]]; then
+    toolbox run -c "$TOOLBOX_CONTAINER" "$APP_DIR/llama-server" --version
+    info "installed llama.cpp is already up to date; skipping build and restart"
+    exit 0
+fi
+
+# Invalidate before attempting an install, including explicit dirty builds.
+rm -f "$BUILD_RECORD"
 info "building llama.cpp from $SRC_DIR"
 info "build output root: $BUILD_DIR"
 info "toolbox container: $TOOLBOX_CONTAINER"
@@ -141,5 +154,9 @@ toolbox run -c "$TOOLBOX_CONTAINER" "$APP_DIR/llama-server" --version
 
 info "restarting $LLAMA_SWAP_SERVICE"
 systemctl --user restart "$LLAMA_SWAP_SERVICE"
+systemctl --user is-active --quiet "$LLAMA_SWAP_SERVICE"
 
+if [[ "$ALLOW_DIRTY" == false ]]; then
+    printf '%s\n' "$build_key" > "$BUILD_RECORD"
+fi
 info "done"
